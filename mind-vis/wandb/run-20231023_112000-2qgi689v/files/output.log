@@ -1,0 +1,59 @@
+
+{'lr': 0.00025, 'min_lr': 0.0, 'weight_decay': 0.05, 'num_epoch': 500, 'warmup_epochs': 40, 'batch_size': 100, 'clip_grad': 0.8, 'mask_ratio': 0.75, 'patch_size': 16, 'embed_dim': 1024, 'decoder_embed_dim': 512, 'depth': 24, 'num_heads': 16, 'decoder_num_heads': 16, 'mlp_ratio': 1.0, 'root_path': '.', 'output_path': './results/fmri_pretrain/23-10-2023-11-20-00', 'seed': 2022, 'roi': 'VC', 'aug_times': 1, 'num_sub_limit': None, 'include_hcp': True, 'include_kam': True, 'accum_iter': 1, 'use_nature_img_loss': False, 'img_recon_weight': 0.5, 'focus_range': None, 'focus_rate': 0.6, 'local_rank': 0}
+Dataset size: 6360
+Number of voxels: 4656
+AdamW (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 0.00025
+    maximize: False
+    weight_decay: 0.0
+Parameter Group 1
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 0.00025
+    maximize: False
+    weight_decay: 0.05
+)
+Start Training the fmri MAE ... ...
+/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torchvision/transforms/functional.py:1603: UserWarning: The default value of the antialias parameter of all the resizing transforms (Resize(), RandomResizedCrop(), etc.) will change from None to True in v0.17, in order to be consistent across the PIL and Tensor backends. To suppress this warning, directly pass antialias=True (recommended, future default), antialias=None (current default, which means False for Tensors and True for PIL), or antialias=False (only works on Tensors - PIL will still use antialiasing). This also applies if you are using the inference transforms from the models weights: update the call to weights.transforms(antialias=True).
+  warnings.warn(
+Traceback (most recent call last):
+  File "code/stageA1_mbm_pretrain.py", line 242, in <module>
+    main(config)
+  File "code/stageA1_mbm_pretrain.py", line 171, in main
+    cor = train_one_epoch(model, dataloader_hcp, optimizer, device, ep, loss_scaler, logger, config, start_time, model_without_ddp,
+  File "/home/yuchen/mind-vis/code/sc_mbm/trainer.py", line 80, in train_one_epoch
+    loss, pred, _ = model(samples, img_features, valid_idx=valid_idx, mask_ratio=config.mask_ratio)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1568, in _call_impl
+    result = forward_call(*args, **kwargs)
+  File "/home/yuchen/mind-vis/code/sc_mbm/mae_for_fmri.py", line 296, in forward
+    pred = self.forward_decoder(latent, ids_restore)  # [N, L, p]
+  File "/home/yuchen/mind-vis/code/sc_mbm/mae_for_fmri.py", line 234, in forward_decoder
+    x = blk(x)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 229, in forward
+    x = x + self.drop_path(self.attn(self.norm1(x)))
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/yuchen/miniconda3/envs/mind-vis/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 206, in forward
+    attn = attn.softmax(dim=-1)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 522.00 MiB. GPU 0 has a total capacty of 11.76 GiB of which 538.12 MiB is free. Process 98822 has 205.67 MiB memory in use. Including non-PyTorch memory, this process has 10.92 GiB memory in use. Of the allocated memory 9.30 GiB is allocated by PyTorch, and 490.30 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

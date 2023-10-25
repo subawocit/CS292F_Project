@@ -1,0 +1,30 @@
+
+{'root_path': '.', 'output_path': './results/fmri_finetune/23-10-2023-16-54-59', 'kam_path': './data/Kamitani/npz', 'bold5000_path': './data/BOLD5000', 'dataset': 'GOD', 'pretrain_mbm_path': 'results/fmri_pretrain/23-10-2023-16-50-23/checkpoints/checkpoint.pth', 'include_nonavg_test': True, 'kam_subs': ['sbj_3'], 'bold5000_subs': ['CSI1'], 'lr': 5.3e-05, 'weight_decay': 0.05, 'num_epoch': 15, 'batch_size': 16, 'mask_ratio': 0.75, 'accum_iter': 1, 'clip_grad': 0.8, 'warmup_epochs': 2, 'min_lr': 0.0, 'local_rank': 0}
+(1800, 4656)
+Dataset size: 1800
+AdamW (
+Parameter Group 0
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 5.3e-05
+    maximize: False
+    weight_decay: 0.0
+Parameter Group 1
+    amsgrad: False
+    betas: (0.9, 0.95)
+    capturable: False
+    differentiable: False
+    eps: 1e-08
+    foreach: None
+    fused: None
+    lr: 5.3e-05
+    maximize: False
+    weight_decay: 0.05
+)
+Finetuning MAE on test fMRI ... ...
+[Epoch 0] loss: 0.8299644040850411

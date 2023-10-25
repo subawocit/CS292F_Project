@@ -1,0 +1,108 @@
+wandb_version: 1
+
+HW:
+  desc: null
+  value: null
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.21
+    framework: lightning
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.5
+    start_time: 1698086809
+    t:
+      1:
+      - 1
+      - 9
+      - 41
+      - 55
+      - 63
+      3:
+      - 1
+      - 16
+      4: 3.8.5
+      5: 0.12.21
+      8:
+      - 5
+accumulate_grad:
+  desc: null
+  value: 1
+batch_size:
+  desc: null
+  value: 5
+bold5000_path:
+  desc: null
+  value: ./data/BOLD5000
+bold5000_subs:
+  desc: null
+  value:
+  - CSI1
+checkpoint_path:
+  desc: null
+  value: null
+crop_ratio:
+  desc: null
+  value: 0.2
+dataset:
+  desc: null
+  value: GOD
+ddim_steps:
+  desc: null
+  value: 250
+eval_avg:
+  desc: null
+  value: true
+global_pool:
+  desc: null
+  value: false
+img_size:
+  desc: null
+  value: 256
+kam_path:
+  desc: null
+  value: ./data/Kamitani/npz
+kam_subs:
+  desc: null
+  value:
+  - sbj_3
+lr:
+  desc: null
+  value: 5.3e-05
+model_meta:
+  desc: null
+  value: null
+num_epoch:
+  desc: null
+  value: 500
+num_samples:
+  desc: null
+  value: 5
+output_path:
+  desc: null
+  value: ./results/generation/23-10-2023-11-46-49
+patch_size:
+  desc: null
+  value: 16
+precision:
+  desc: null
+  value: 32
+pretrain_gm_path:
+  desc: null
+  value: ./pretrains/ldm/label2img
+pretrain_mbm_path:
+  desc: null
+  value: ./pretrains/GOD/fmri_encoder.pth
+roi:
+  desc: null
+  value: VC
+root_path:
+  desc: null
+  value: .
+seed:
+  desc: null
+  value: 2022
+use_time_cond:
+  desc: null
+  value: true
