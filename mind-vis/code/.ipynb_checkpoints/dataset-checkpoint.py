@@ -1,4 +1,3 @@
-
 from torch.utils.data import Dataset
 import numpy as np
 import os
@@ -9,6 +8,19 @@ import csv
 import torch
 from pathlib import Path
 import torchvision.transforms as transforms
+from os.path import join as pjoin
+import glob
+import pandas as pd
+from nilearn.masking import apply_mask, unmask
+from nilearn.plotting import plot_epi, plot_stat_map
+from nilearn.image import load_img, index_img, iter_img
+import matplotlib.pyplot as plt
+import cortex
+from PIL import Image
+'''
+modifications: 
+- update things dataset (11/07)
+'''
 
 def identity(x):
     return x
@@ -470,3 +482,108 @@ class BOLD5000_dataset(Dataset):
     def switch_sub_view(self, sub, subs):
         # Not implemented
         pass
+
+
+class things_dataset(Dataset):
+    def __init__(self, fmri, image, img_label, fmri_transform=identity, image_transform=identity, num_voxels=0, num_per_sub=50):
+        super(things_dataset, self).__init__()
+        self.fmri = fmri
+        self.image = image
+        if len(self.image) != len(self.fmri):
+            self.image = np.repeat(self.image, 35, axis=0)
+        self.fmri_transform = fmri_transform
+        self.image_transform = image_transform
+        self.num_voxels = num_voxels
+        self.num_per_sub = num_per_sub
+        self.img_class = [i[0] for i in img_label]
+        self.img_class_name = [i[1] for i in img_label]
+        self.naive_label = [i[2] for i in img_label]
+        self.return_image_class_info = False
+
+    def __len__(self):
+        return len(self.fmri)
+    
+    def __getitem__(self, index):
+        fmri = self.fmri[index]
+        if index >= len(self.image):
+            img = np.zeros_like(self.image[0])
+        else:
+            img = self.image[index] / 255.0
+        fmri = np.expand_dims(fmri, axis=0) # (1, num_voxels)
+        if self.return_image_class_info:
+            img_class = self.img_class[index]
+            img_class_name = self.img_class_name[index]
+            naive_label = torch.tensor(self.naive_label[index])
+            return {'fmri': self.fmri_transform(fmri), 'image': self.image_transform(img),
+                    'image_class': img_class, 'image_class_name': img_class_name, 'naive_label':naive_label}
+        else:
+            return {'fmri': self.fmri_transform(fmri), 'image': self.image_transform(img)}
+            
+def create_things_dataset(path='/home/yuchen/dataset/fmri',  roi='VC', patch_size=16, fmri_transform=identity,
+            image_transform=identity, subject = '01'):
+    basedir = path
+    betas_csv_dir = pjoin(basedir, 'betas_csv')
+    sub = subject
+    
+    data_file = pjoin(betas_csv_dir, f'sub-{sub}_ResponseData.h5')
+    responses = pd.read_hdf(data_file)
+    vox_f = pjoin(betas_csv_dir, f'sub-{sub}_VoxelMetadata.csv')
+    voxdata = pd.read_csv(vox_f)
+    stim_f = pjoin(betas_csv_dir, f'sub-{sub}_StimulusMetadata.csv')
+    stimdata = pd.read_csv(stim_f)
+
+    train_idx = stimdata[stimdata['trial_type'] == 'train'].index.tolist()
+    test_idx = stimdata[stimdata['trial_type'] == 'test'].index.tolist()
+    
+    train_fmri = responses[train_idx]
+    test_fmri = responses[test_idx]
+    
+    train_labels = stimdata[stimdata['trial_type'] == 'train']['stimulus'].iloc[:6000]
+    test_labels = stimdata[stimdata['trial_type'] == 'test']['stimulus'].iloc[:250]
+    
+    roi_idx = voxdata[(voxdata['V1'] == 1) | (voxdata['V2'] == 1) | (voxdata['V3'] == 1) | (voxdata['hV4'] == 1) ]['voxel_id'].tolist()
+    train_fmri = train_fmri.iloc[roi_idx]
+    test_fmri = test_fmri.iloc[roi_idx]
+
+    del responses, voxdata, stimdata
+    
+    train_img, test_img = np.array([]),np.array([])
+
+    train_img = [] 
+    first_img_path = os.path.join('/home/yuchen/dataset/images_resized/', train_labels.iloc[0])
+    with Image.open(first_img_path) as first_img:
+        first_img_array = np.array(first_img)
+        img_shape = first_img_array.shape
+        
+    train_img = np.empty((len(train_labels), *img_shape), dtype=first_img_array.dtype)
+    for i, label in enumerate(train_labels):
+        img_path = os.path.join('/home/yuchen/dataset/images_resized/', label)
+        with Image.open(img_path) as img:
+            train_img[i] = np.array(img)
+
+    test_img = []  
+    first_img_path = os.path.join('/home/yuchen/dataset/images_resized/', test_labels.iloc[0])
+    with Image.open(first_img_path) as first_img:
+        first_img_array = np.array(first_img)
+        img_shape = first_img_array.shape
+        
+    test_img = np.empty((len(test_labels), *img_shape), dtype=first_img_array.dtype)
+    for i, label in enumerate(test_labels):
+        img_path = os.path.join('/home/yuchen/dataset/images_resized/', label)
+        with Image.open(img_path) as img:
+            test_img[i] = np.array(img)
+    train_fmri, test_fmri =  train_fmri.to_numpy(), test_fmri.to_numpy()
+    train_img_label_all, test_img_label_all = train_labels.tolist(), test_labels.tolist()
+
+        
+    train_fmri = normalize(pad_to_patch_size(train_fmri, patch_size))
+    test_fmri = normalize(pad_to_patch_size(test_fmri, patch_size), np.mean(train_fmri), np.std(train_fmri))
+    
+    num_voxels = train_fmri.shape[-1]
+    
+    if isinstance(image_transform, list):
+        return (things_dataset(train_fmri, train_img, train_img_label_all, fmri_transform, image_transform[0], num_voxels, len(train_img_label_all)//5), 
+                things_dataset(test_fmri, test_img, test_img_label_all, torch.FloatTensor, image_transform[1], num_voxels, len(test_img_label_all)//5))
+    else:
+        return (things_dataset(train_fmri, train_img, train_img_label_all, fmri_transform, image_transform, num_voxels, len(train_img_label_all)//5), 
+                things_dataset(test_fmri, test_img, test_img_label_all, torch.FloatTensor, image_transform, num_voxels, len(test_img_label_all)//5))

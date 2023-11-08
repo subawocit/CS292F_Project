@@ -18,6 +18,7 @@ from sc_mbm.trainer import train_one_epoch
 from sc_mbm.trainer import NativeScalerWithGradNormCount as NativeScaler
 from sc_mbm.utils import save_model
 
+from dataset import create_Kamitani_dataset, create_BOLD5000_dataset, create_things_dataset
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -26,6 +27,8 @@ modifications:
 - turn off userwarnings and wandb
 - save model with the best cor (for test purpose only; will be overwritten by original saving method)
 - debug to match the torch.device
+- set up things dataset loader (11/07)
+- add two more configs (11/07)
 '''
 
 
@@ -97,6 +100,10 @@ def get_args_parser():
     
     # distributed training parameters
     parser.add_argument('--local_rank', type=int)
+
+    # new
+    parser.add_argument('--dataset', type=str)
+    parser.add_argument('--subject', type=str)
                         
     return parser
 
@@ -132,9 +139,14 @@ def main(config):
     np.random.seed(config.seed)
 
     # create dataset and dataloader
-    dataset_pretrain = hcp_dataset(path=os.path.join(config.root_path, 'data/HCP/npz'), roi=config.roi, patch_size=config.patch_size,
-                transform=fmri_transform, aug_times=config.aug_times, num_sub_limit=config.num_sub_limit, 
-                include_kam=config.include_kam, include_hcp=config.include_hcp)
+    if config.dataset == 'hcp':
+        dataset_pretrain = hcp_dataset(path=os.path.join(config.root_path, 'data/HCP/npz'), roi=config.roi, patch_size=config.patch_size,
+                    transform=fmri_transform, aug_times=config.aug_times, num_sub_limit=config.num_sub_limit, 
+                    include_kam=config.include_kam, include_hcp=config.include_hcp)
+    elif config.dataset == 'things': dataset_pretrain,_ = create_things_dataset(roi=config.roi, patch_size=config.patch_size,
+                                                                                fmri_transform=torch.FloatTensor,
+                                                                                subject=config.subject)
+    else: print('dataset not available')
    
     print(f'Dataset size: {len(dataset_pretrain)}\nNumber of voxels: {dataset_pretrain.num_voxels}')
     sampler = torch.utils.data.DistributedSampler(dataset_pretrain, rank=config.local_rank) if torch.cuda.device_count() > 1 else None 

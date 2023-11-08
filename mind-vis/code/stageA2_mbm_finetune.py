@@ -13,7 +13,7 @@ import copy
 
 # own code
 from config import Config_MBM_finetune
-from dataset import create_Kamitani_dataset, create_BOLD5000_dataset
+from dataset import create_Kamitani_dataset, create_BOLD5000_dataset, create_things_dataset
 from sc_mbm.mae_for_fmri import MAEforFMRI
 from sc_mbm.trainer import train_one_epoch
 from sc_mbm.trainer import NativeScalerWithGradNormCount as NativeScaler
@@ -26,6 +26,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 modifications: 
 - turn off userwarnings and wandb
 - save model with the best cor (for test purpose only; will be overwritten by original saving method)
+- set up things dataset loader (11/07)
 '''
 
 
@@ -80,6 +81,9 @@ def get_args_parser():
     
     # distributed training parameters
     parser.add_argument('--local_rank', type=int)
+
+    # new
+    parser.add_argument('--subject', type=str)
                         
     return parser
 
@@ -134,6 +138,9 @@ def main(config):
     elif config.dataset == 'BOLD5000':
         _, test_set = create_BOLD5000_dataset(path=config.bold5000_path, patch_size=config_pretrain.patch_size, 
                 fmri_transform=torch.FloatTensor, subjects=config.bold5000_subs, include_nonavg_test=config.include_nonavg_test)
+    elif config.dataset == 'things':
+        _, test_set = create_things_dataset(roi=config.roi,patch_size=config_pretrain.patch_size,
+                                            fmri_transform=torch.FloatTensor,subject=config.subject)
     else:
         raise NotImplementedError
 

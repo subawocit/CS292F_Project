@@ -40,9 +40,11 @@ class MAEforFMRI(nn.Module):
         self.patch_embed = PatchEmbed1D(num_voxels, patch_size, in_chans, embed_dim)
 
         num_patches = self.patch_embed.num_patches
+        
+        # =============================== for things dataset, fix the num_patches after conv
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False)  # fixed sin-cos embedding
-
+            
         self.blocks = nn.ModuleList([
             Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(depth)])
@@ -56,7 +58,11 @@ class MAEforFMRI(nn.Module):
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
 
         self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
-
+        # =============================== for things dataset, fix the num_patches after conv
+        # if num_patches*patch_size == num_voxels: 
+        #     self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches, decoder_embed_dim), requires_grad=False)
+            
+        
         self.decoder_blocks = nn.ModuleList([
             Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(decoder_depth)])
@@ -72,6 +78,8 @@ class MAEforFMRI(nn.Module):
             self.nature_img_mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
 
             self.nature_img_decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
+            # if num_patches*patch_size == num_voxels: 
+            #     self.nature_img_decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches, decoder_embed_dim), requires_grad=False)
 
             self.nature_img_decoder_blocks = nn.ModuleList([
                 Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
@@ -284,7 +292,6 @@ class MAEforFMRI(nn.Module):
         mask: [N, L], 0 is keep, 1 is remove, 
         """
         target = self.patchify(imgs)
-
         loss = (pred - target) ** 2
         loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
         

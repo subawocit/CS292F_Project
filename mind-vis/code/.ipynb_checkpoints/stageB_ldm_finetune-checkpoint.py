@@ -13,7 +13,7 @@ import copy
 
 # own code
 from config import Config_Generative_Model
-from dataset import create_Kamitani_dataset, create_BOLD5000_dataset
+from dataset import create_Kamitani_dataset, create_BOLD5000_dataset,create_things_dataset
 from dc_ldm.ldm_for_fmri import fLDM
 from eval_metrics import get_similarity_metric
 
@@ -26,6 +26,8 @@ modifications:
 - save model with the best cor (for test purpose only; will be overwritten by original saving method)
 - save both the ground-truth and pred images for the test set (instead of only the pred images)
 - save the error metric as .txt file
+- add things dataset loader (11/07)
+
 additional notes:
 - the "missing keys" error is fine, that's how their model works
 - they only have training and testing sets, no validation sets
@@ -176,6 +178,11 @@ def main(config):
                 fmri_transform=fmri_transform, image_transform=[img_transform_train, img_transform_test], 
                 subjects=config.bold5000_subs)
         num_voxels = fmri_latents_dataset_train.num_voxels
+    elif config.dataset == 'things':
+        fmri_latents_dataset_train, fmri_latents_dataset_test = create_things_dataset(roi=config.roi, patch_size=config.patch_size, 
+                fmri_transform=fmri_transform, image_transform=[img_transform_train, img_transform_test], 
+                subject=config.subject)
+        num_voxels = fmri_latents_dataset_train.num_voxels
     else:
         raise NotImplementedError
 
@@ -231,6 +238,11 @@ def get_args_parser():
 
     # # distributed training parameters
     # parser.add_argument('--local_rank', type=int)
+
+    # new
+    parser.add_argument('--subject', type=str)
+    parser.add_argument('--roi', type=str)
+    
 
     return parser
 
