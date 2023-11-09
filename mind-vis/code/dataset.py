@@ -20,6 +20,7 @@ from PIL import Image
 '''
 modifications: 
 - update things dataset (11/07)
+- things dataset debug; if num_neurons != patch_size, then remove the last num_neurons%patch_size items (11/08)
 '''
 
 def identity(x):
@@ -506,6 +507,7 @@ class things_dataset(Dataset):
     def __getitem__(self, index):
         fmri = self.fmri[index]
         if index >= len(self.image):
+            print('appending zero-value images')
             img = np.zeros_like(self.image[0])
         else:
             img = self.image[index] / 255.0
@@ -539,15 +541,15 @@ def create_things_dataset(path='/home/yuchen/dataset/fmri',  roi='VC', patch_siz
     test_fmri = responses[test_idx]
     
     train_labels = stimdata[stimdata['trial_type'] == 'train']['stimulus'].iloc[:6000]
-    test_labels = stimdata[stimdata['trial_type'] == 'test']['stimulus'].iloc[:250]
+    test_labels = stimdata[stimdata['trial_type'] == 'test']['stimulus'].iloc[:200]
     
     roi_idx = voxdata[(voxdata['V1'] == 1) | (voxdata['V2'] == 1) | (voxdata['V3'] == 1) | (voxdata['hV4'] == 1) ]['voxel_id'].tolist()
-    train_fmri = train_fmri.iloc[roi_idx]
-    test_fmri = test_fmri.iloc[roi_idx]
+    train_fmri = train_fmri.iloc[roi_idx].iloc[:,:6000]
+    test_fmri = test_fmri.iloc[roi_idx].iloc[:,:200]
 
     del responses, voxdata, stimdata
     
-    train_img, test_img = np.array([]),np.array([])
+    # train_img, test_img = np.array([]),np.array([])
 
     train_img = [] 
     first_img_path = os.path.join('/home/yuchen/dataset/images_resized/', train_labels.iloc[0])
@@ -575,10 +577,26 @@ def create_things_dataset(path='/home/yuchen/dataset/fmri',  roi='VC', patch_siz
     train_fmri, test_fmri =  train_fmri.to_numpy(), test_fmri.to_numpy()
     train_img_label_all, test_img_label_all = train_labels.tolist(), test_labels.tolist()
 
+    if train_fmri.shape[-1]%patch_size != 0:
+        length = train_fmri.shape[-1]//patch_size * patch_size
+        train_fmri = train_fmri[:,:length]
+        train_labels = train_labels[:length]
+        train_img = train_img[:length]
+    if test_fmri.shape[-1]%patch_size != 0:
+        length = test_fmri.shape[-1]//patch_size * patch_size
+        test_fmri = test_fmri[:,:length]
+        test_labels = test_labels[:length]
+        test_img = test_img[:length]
+        
+    train_fmri, test_fmri = train_fmri.T, test_fmri.T
+        
         
     train_fmri = normalize(pad_to_patch_size(train_fmri, patch_size))
     test_fmri = normalize(pad_to_patch_size(test_fmri, patch_size), np.mean(train_fmri), np.std(train_fmri))
     
+    # train_fmri = normalize(train_fmri)
+    # test_fmri = normalize((test_fmri), np.mean(train_fmri), np.std(train_fmri))
+
     num_voxels = train_fmri.shape[-1]
     
     if isinstance(image_transform, list):
