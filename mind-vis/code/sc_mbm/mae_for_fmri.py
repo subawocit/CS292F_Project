@@ -41,7 +41,6 @@ class MAEforFMRI(nn.Module):
 
         num_patches = self.patch_embed.num_patches
         
-        # =============================== for things dataset, fix the num_patches after conv
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False)  # fixed sin-cos embedding
             
@@ -54,13 +53,8 @@ class MAEforFMRI(nn.Module):
         # --------------------------------------------------------------------------
         # MAE decoder specifics
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
-
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
-
         self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
-        # =============================== for things dataset, fix the num_patches after conv
-        # if num_patches*patch_size == num_voxels: 
-        #     self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches, decoder_embed_dim), requires_grad=False)
             
         
         self.decoder_blocks = nn.ModuleList([
@@ -78,8 +72,6 @@ class MAEforFMRI(nn.Module):
             self.nature_img_mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
 
             self.nature_img_decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
-            # if num_patches*patch_size == num_voxels: 
-            #     self.nature_img_decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches, decoder_embed_dim), requires_grad=False)
 
             self.nature_img_decoder_blocks = nn.ModuleList([
                 Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
