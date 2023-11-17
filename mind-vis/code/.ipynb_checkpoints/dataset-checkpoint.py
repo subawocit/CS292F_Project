@@ -21,7 +21,9 @@ from PIL import Image
 modifications: 
 - update things dataset (11/07)
 - things dataset debug; if num_neurons != patch_size, then remove the last num_neurons%patch_size items (11/08)
+- reduce training set size to be 3000 instead of 6000 and test size to be 100 instead of 200 (11/16)
 '''
+
 
 def identity(x):
     return x
@@ -523,6 +525,10 @@ class things_dataset(Dataset):
             
 def create_things_dataset(path='/home/yuchen/dataset/fmri',  roi='VC', patch_size=16, fmri_transform=identity,
             image_transform=identity, subject = '01'):
+
+    train_size = 3000
+    test_size = 100
+
     basedir = path
     betas_csv_dir = pjoin(basedir, 'betas_csv')
     sub = subject
@@ -540,12 +546,12 @@ def create_things_dataset(path='/home/yuchen/dataset/fmri',  roi='VC', patch_siz
     train_fmri = responses[train_idx]
     test_fmri = responses[test_idx]
     
-    train_labels = stimdata[stimdata['trial_type'] == 'train']['stimulus'].iloc[:6000]
-    test_labels = stimdata[stimdata['trial_type'] == 'test']['stimulus'].iloc[:200]
+    train_labels = stimdata[stimdata['trial_type'] == 'train']['stimulus'].iloc[:train_size]
+    test_labels = stimdata[stimdata['trial_type'] == 'test']['stimulus'].iloc[:test_size]
     
     roi_idx = voxdata[(voxdata['V1'] == 1) | (voxdata['V2'] == 1) | (voxdata['V3'] == 1) | (voxdata['hV4'] == 1) ]['voxel_id'].tolist()
-    train_fmri = train_fmri.iloc[roi_idx].iloc[:,:6000]
-    test_fmri = test_fmri.iloc[roi_idx].iloc[:,:200]
+    train_fmri = train_fmri.iloc[roi_idx].iloc[:,:train_size]
+    test_fmri = test_fmri.iloc[roi_idx].iloc[:,:test_size]
 
     del responses, voxdata, stimdata
     

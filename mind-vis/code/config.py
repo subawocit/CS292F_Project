@@ -1,5 +1,9 @@
 import os
 import numpy as np
+'''
+modifications:
+change self.img_size in stage B to 128 (11/16)
+'''
 
 class Config_MAE_fMRI: # back compatibility
     pass
@@ -107,7 +111,9 @@ class Config_Generative_Model:
         self.bold5000_subs = ['CSI1']
         self.pretrain_mbm_path = os.path.join(self.root_path, f'pretrains/{self.dataset}/fmri_encoder.pth') 
 
-        self.img_size = 256
+        # self.img_size = 256
+        self.img_size = 128
+        
 
         np.random.seed(self.seed)
         # finetune parameters

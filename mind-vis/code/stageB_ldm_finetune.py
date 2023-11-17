@@ -8,6 +8,7 @@ import torchvision.transforms as transforms
 from einops import rearrange
 from PIL import Image
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
 from pytorch_lightning.loggers import WandbLogger
 import copy
 
@@ -27,11 +28,14 @@ modifications:
 - save both the ground-truth and pred images for the test set (instead of only the pred images)
 - save the error metric as .txt file
 - add things dataset loader (11/07)
+- resize images to 128*128 (11/15)
+- add logger (11/16)
 
 additional notes:
 - the "missing keys" error is fine, that's how their model works
 - they only have training and testing sets, no validation sets
 - get_eval_metric(samples, avg=config.eval_avg) works with any images as long as the samples shape is (n_images, 1gt+4pred, channel, h, w)
+- it seems like the results folder will be erased after training is finished, so I stored the results in a different folder
 '''
 
 def wandb_init(config, output_path):
@@ -85,10 +89,14 @@ def get_eval_metric(samples, avg=True):
     return res_list, metric_list
                
 def generate_images(generative_model, fmri_latents_dataset_train, fmri_latents_dataset_test, config):
+    custom_path = '/home/yuchen/mind-vis/results/generation/test'
+    
     grid, samples = generative_model.generate(fmri_latents_dataset_train, config.num_samples, 
                 config.ddim_steps, config.HW, 10) # generate 10 instances
     grid_imgs = Image.fromarray(grid.astype(np.uint8))
     grid_imgs.save(os.path.join(config.output_path, 'samples_train.png'))
+    grid_imgs.save(custom_path+'/samples_train.png')
+    
     # wandb.log({'summary/samples_train': wandb.Image(grid_imgs)})
 
     print('Generating test images')
@@ -98,6 +106,16 @@ def generate_images(generative_model, fmri_latents_dataset_train, fmri_latents_d
     # grid_imgs.save(os.path.join(config.output_path,f'./samples_test.png'))
     print('Saving test images')
     grid_imgs.save(os.path.join(config.output_path,'samples_test.png'))
+    grid_imgs.save(custom_path+'/samples_test.png')
+
+    print('Saving metric')
+    metric, metric_list = get_eval_metric(samples, avg=config.eval_avg)
+    merged_list = [str(a) + ': ' + str(b) for a, b in zip(metric_list, metric)]
+    metric_str = '\n'.join(map(str, merged_list))
+    # metric_file_path = os.path.join(config.output_path,'metric.txt')
+    metric_file_path = custom_path+'/metric.txt'
+    with open(metric_file_path, 'w') as f:
+        f.write(metric_str)
 
     for sp_idx, imgs in enumerate(samples):
         gt_img = imgs[0]
@@ -106,22 +124,18 @@ def generate_images(generative_model, fmri_latents_dataset_train, fmri_latents_d
         for copy_idx, _ in enumerate(imgs[1:]):
             pred_img = imgs[1:][copy_idx]
             pred_img = rearrange(pred_img, 'c h w -> h w c')
-            
             Image.fromarray(pred_img).save(os.path.join(config.output_path, f'./test_pred_img_{sp_idx}-{copy_idx}.png'))
             Image.fromarray(gt_img).save(os.path.join(config.output_path, f'./test_gt_img_{sp_idx}-{copy_idx}.png'))
+
+            Image.fromarray(pred_img).save(os.path.join(custom_path, f'./test_pred_img_{sp_idx}-{copy_idx}.png'))
+            Image.fromarray(gt_img).save(os.path.join(custom_path, f'./test_gt_img_{sp_idx}-{copy_idx}.png'))
+            
             
             # img = rearrange(img, 'c h w -> h w c')
             # Image.fromarray(img).save(os.path.join(config.output_path, 
             #                 f'./test{sp_idx}-{copy_idx}.png'))
 
     # wandb.log({f'summary/samples_test': wandb.Image(grid_imgs)})
-    print('Saving metric')
-    metric, metric_list = get_eval_metric(samples, avg=config.eval_avg)
-    merged_list = [str(a) + ': ' + str(b) for a, b in zip(metric_list, metric)]
-    metric_str = '\n'.join(map(str, merged_list))
-    metric_file_path = os.path.join(config.output_path,'metric.txt')
-    with open(metric_file_path, 'w') as f:
-        f.write(metric_str)
 
     # metric_dict = {f'summary/pair-wise_{k}':v for k, v in zip(metric_list[:-2], metric[:-2])}
     # metric_dict[f'summary/{metric_list[-2]}'] = metric[-2]
@@ -161,11 +175,15 @@ def main(config):
     img_transform_train = transforms.Compose([
         normalize,
         random_crop(config.img_size-crop_pix, p=0.5),
-        transforms.Resize((256, 256)), 
+        # transforms.Resize((256, 256)), 
+        transforms.Resize((128, 128)), 
+        
         channel_last
     ])
     img_transform_test = transforms.Compose([
-        normalize, transforms.Resize((256, 256)), 
+        # normalize, transforms.Resize((256, 256)), 
+        normalize, transforms.Resize((128, 128)), 
+        
         channel_last
     ])
     if config.dataset == 'GOD':
@@ -199,12 +217,14 @@ def main(config):
         generative_model.model.load_state_dict(model_meta['model_state_dict'])
         print('model resumed')
     # finetune the model
+    print('start training')
     trainer = create_trainer(config.num_epoch, config.precision, config.accumulate_grad, logger=None, check_val_every_n_epoch=5)
     generative_model.finetune(trainer, fmri_latents_dataset_train, fmri_latents_dataset_test,
                 config.batch_size, config.lr, config.output_path, config=config)
 
     # generate images
     # generate limited train images and generate images for subjects seperately
+    print('start generate images')
     generate_images(generative_model, fmri_latents_dataset_train, fmri_latents_dataset_test, config)
 
     return
@@ -261,6 +281,7 @@ def create_readme(config, path):
 
 def create_trainer(num_epoch, precision=32, accumulate_grad_batches=2,logger=None,check_val_every_n_epoch=0):
     acc = 'gpu' if torch.cuda.is_available() else 'cpu'
+    logger = CSVLogger(save_dir='/home/yuchen/mind-vis/results/generation/test/', name="lightning_logs")
     return pl.Trainer(accelerator=acc, max_epochs=num_epoch, logger=logger, 
             precision=precision, accumulate_grad_batches=accumulate_grad_batches,
             enable_checkpointing=False, enable_model_summary=False, gradient_clip_val=0.5,

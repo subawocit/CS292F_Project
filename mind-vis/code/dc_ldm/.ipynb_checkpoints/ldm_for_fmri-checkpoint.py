@@ -12,6 +12,10 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from sc_mbm.mae_for_fmri import fmri_encoder
 
+'''
+modification: unfreezed the first stage
+'''
+
 def create_model_from_config(config, num_voxels, global_pool):
     model = fmri_encoder(num_voxels=num_voxels, patch_size=config.patch_size, embed_dim=config.embed_dim,
                 depth=config.depth, num_heads=config.num_heads, mlp_ratio=config.mlp_ratio, global_pool=global_pool) 
@@ -96,10 +100,13 @@ class fLDM:
         dataloader = DataLoader(dataset, batch_size=bs1, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
         self.model.unfreeze_whole_model()
-        self.model.freeze_first_stage()
+        # =================================================
+        # self.model.freeze_first_stage()
+        # =================================================
 
         self.model.learning_rate = lr1
         self.model.train_cond_stage_only = True
+        
         self.model.eval_avg = config.eval_avg
         trainers.fit(self.model, dataloader, val_dataloaders=test_loader)
 
@@ -155,6 +162,8 @@ class fLDM:
                 x_samples_ddim = model.decode_first_stage(samples_ddim)
                 x_samples_ddim = torch.clamp((x_samples_ddim+1.0)/2.0, min=0.0, max=1.0)
                 gt_image = torch.clamp((gt_image+1.0)/2.0, min=0.0, max=1.0)
+
+                x_samples_ddim = torch.nn.functional.interpolate(x_samples_ddim, size=(128, 128), mode='bilinear', align_corners=False)
                 
                 all_samples.append(torch.cat([gt_image, x_samples_ddim.detach().cpu()], dim=0)) # put groundtruth at first
                 

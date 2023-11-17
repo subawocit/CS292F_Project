@@ -29,6 +29,11 @@ from PIL import Image
 import torch.nn.functional as F
 from eval_metrics import get_similarity_metric
 
+'''
+modification:
+line418: 256*256->128*128
+'''
+
 __conditioning_keys__ = {'concat': 'c_concat',
                          'crossattn': 'c_crossattn',
                          'adm': 'y'}
@@ -56,7 +61,9 @@ class DDPM(pl.LightningModule):
                  monitor="val/loss",
                  use_ema=True,
                  first_stage_key="image",
-                 image_size=256,
+                 # image_size=256,
+                 image_size=128,
+                 
                  channels=3,
                  log_every_t=100,
                  clip_denoised=True,
@@ -412,8 +419,8 @@ class DDPM(pl.LightningModule):
                                                 shape=shape,
                                                 verbose=False,
                                                 generator=None)
-
                 x_samples_ddim = model.decode_first_stage(samples_ddim)
+                x_samples_ddim = torch.nn.functional.interpolate(x_samples_ddim, size=(128, 128), mode='bilinear', align_corners=False)
                 x_samples_ddim = torch.clamp((x_samples_ddim+1.0)/2.0,min=0.0, max=1.0)
                 gt_image = torch.clamp((gt_image+1.0)/2.0,min=0.0, max=1.0)
                 
@@ -889,6 +896,7 @@ class LatentDiffusion(DDPM):
         if hasattr(self, "split_input_params"):
             if self.split_input_params["patch_distributed_vq"]:
                 ks = self.split_input_params["ks"]  # eg. (128, 128)
+                # =======================================
                 stride = self.split_input_params["stride"]  # eg. (64, 64)
                 uf = self.split_input_params["vqf"]
                 bs, nc, h, w = z.shape

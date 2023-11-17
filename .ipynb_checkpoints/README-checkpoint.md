@@ -7,3 +7,10 @@ cd CS292F_Project
 conda env create -f environment.yml
 conda activate mind-vis
 ```
+
+note: I hardcoded some file paths, please do 
+```sh
+grep -r '/home/yuchen'
+```
+and change file accordingly to make sure everything is stored in the intended location
+
