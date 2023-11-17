@@ -8,9 +8,9 @@ conda env create -f environment.yml
 conda activate mind-vis
 ```
 
-note: I hardcoded some file paths, please do 
+note: I hard-coded some file paths, please do 
 ```sh
 grep -r '/home/yuchen'
 ```
-and change file accordingly to make sure everything is stored in the intended location
+and change file paths accordingly to make sure everything is stored in the intended location
 
