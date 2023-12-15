@@ -1,8 +1,0 @@
-
-{'seed': 2022, 'root_path': '.', 'kam_path': './data/Kamitani/npz', 'bold5000_path': './data/BOLD5000', 'roi': 'VC', 'patch_size': 16, 'pretrain_gm_path': './pretrains/ldm/label2img', 'dataset': 'GOD', 'kam_subs': ['sbj_3'], 'bold5000_subs': ['CSI1'], 'pretrain_mbm_path': './pretrains/GOD/fmri_encoder.pth', 'img_size': 256, 'batch_size': 5, 'lr': 5.3e-05, 'num_epoch': 500, 'precision': 32, 'accumulate_grad': 1, 'crop_ratio': 0.2, 'global_pool': False, 'use_time_cond': True, 'eval_avg': True, 'num_samples': 5, 'ddim_steps': 250, 'HW': None, 'model_meta': None, 'checkpoint_path': None, 'output_path': './results/generation/23-10-2023-11-47-27'}
-Traceback (most recent call last):
-  File "code/stageB_ldm_finetune.py", line 244, in <module>
-    main(config)
-  File "code/stageB_ldm_finetune.py", line 153, in main
-    device=device, pretrain_root=config.pretrain_gm_path, logger=config.logger,
-AttributeError: 'Config_Generative_Model' object has no attribute 'logger'
