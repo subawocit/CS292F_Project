@@ -10,7 +10,7 @@ conda activate ldm
 
 Install Stable Diffusion v1.4 (under the diffusion_sd1/ directory), download checkpoint (sd-v1-4.ckpt), and place it under the ```codes/diffusion_sd1/stable-diffusion/models/ldm/stable-diffusion-v1/``` directory.
 
-All reconstructed images are availble: [TODO]
+All reconstructed images are available: [https://drive.google.com/drive/folders/13K7H1X_cuCKwYBZGEG3xxEtBNYyuUJcM?usp=drive_link]
 
 note: I hard-coded some file paths, please do 
 ```sh
